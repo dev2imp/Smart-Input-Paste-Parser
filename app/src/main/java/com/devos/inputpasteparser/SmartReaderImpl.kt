@@ -50,16 +50,19 @@ class SmartPasteReaderImpl(
         when {
             mimeType?.startsWith("image/") == true -> {
                 val saved = copyToSandbox(parsedUri, extensionFor(mimeType))
-                CapturedContent.Image(savedFile = saved!!, originalUri = uri)
+                    ?: return@withContext CapturedContent.Empty
+                CapturedContent.Image(savedFile = saved, originalUri = uri)
             }
             mimeType?.startsWith("video/") == true -> {
                 val saved = copyToSandbox(parsedUri, extensionFor(mimeType))
-                CapturedContent.Video(savedFile = saved!!, originalUri = uri)
+                    ?: return@withContext CapturedContent.Empty
+                CapturedContent.Video(savedFile = saved, originalUri = uri)
             }
             else -> {
                 val saved = copyToSandbox(parsedUri, extensionFor(mimeType ?: "application/octet-stream"))
+                    ?: return@withContext CapturedContent.Empty
                 CapturedContent.GenericFile(
-                    savedFile = saved!!,
+                    savedFile = saved,
                     originalFileName = originalName ?: saved.name,
                     mimeType = mimeType,
                     originalUri = uri
