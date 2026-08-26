@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.compose)   // ← EKLE
+    alias(libs.plugins.kotlin.compose)
+    id("maven-publish") 
 }
 
 android {
@@ -26,6 +27,24 @@ android {
     }
     buildFeatures {
         compose = true   // ← EKLE
+    }
+    publishing {
+        singleVariant("release") {
+            withSourcesJar()
+        }
+    }
+}
+afterEvaluate {
+    publishing {
+        publications {
+            register<MavenPublication>("release") {
+                groupId = "com.github.dev2imp"
+                artifactId = "Smart-Input-Paste-Parser"
+                version = "1.0.1"
+
+                from(components["release"])
+            }
+        }
     }
 }
 
