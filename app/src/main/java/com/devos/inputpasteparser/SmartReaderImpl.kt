@@ -58,6 +58,15 @@ class SmartPasteReaderImpl(
                     ?: return@withContext CapturedContent.Empty
                 CapturedContent.Video(savedFile = saved, originalUri = uri)
             }
+            mimeType?.startsWith("audio/") == true -> {
+                val saved = copyToSandbox(parsedUri, extensionFor(mimeType))
+                    ?: return@withContext CapturedContent.Empty
+
+                CapturedContent.Audio(
+                    savedFile = saved,
+                    originalUri = uri
+                )
+            }
             else -> {
                 val saved = copyToSandbox(parsedUri, extensionFor(mimeType ?: "application/octet-stream"))
                     ?: return@withContext CapturedContent.Empty

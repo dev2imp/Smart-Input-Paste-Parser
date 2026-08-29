@@ -3,6 +3,7 @@ package com.devos.inputpasteparser.ui
 import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
+import android.media.MediaRecorder
 import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -21,7 +22,10 @@ import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.InsertDriveFile
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -45,6 +49,7 @@ import com.devos.inputpasteparser.CapturedContent
 import com.devos.inputpasteparser.SmartPasteReaderImpl
 import com.devos.inputpasteparser.SmartReader
 import kotlinx.coroutines.launch
+import java.io.File
 
 /**
  * A single, self-contained input item: type, paste, or pick a file —
@@ -67,6 +72,10 @@ fun SmartInputPasteItem(
     var isTyping by remember { mutableStateOf(false) }
     var typedText by remember { mutableStateOf("") }
 
+    var isRecording by remember { mutableStateOf(false) }
+    var recorder by remember { mutableStateOf<MediaRecorder?>(null) }
+    var recordingFile by remember { mutableStateOf<File?>(null) }
+
     LaunchedEffect(content) {
         onContentChanged(content)
     }
@@ -75,6 +84,61 @@ fun SmartInputPasteItem(
         isTyping = false
         scope.launch {
             content = actualReader.readClipboard()
+        }
+    }
+    fun startRecording() {
+        try {
+            val file = File(
+                context.cacheDir,
+                "recording_${System.currentTimeMillis()}.m4a"
+            )
+
+            val newRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                MediaRecorder(context).apply {
+                    setAudioSource(MediaRecorder.AudioSource.MIC)
+                    setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                    setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                    setOutputFile(file.absolutePath)
+
+                    prepare()
+                    start()
+                }
+            } else {
+                TODO("VERSION.SDK_INT < S")
+            }
+
+            recorder = newRecorder
+            recordingFile = file
+            isRecording = true
+
+        } catch (e: Exception) {
+            recorder?.release()
+            recorder = null
+            recordingFile = null
+            isRecording = false
+        }
+    }
+
+    fun stopRecording() {
+        try {
+            recorder?.apply {
+                stop()
+                release()
+            }
+
+            recordingFile?.let { file ->
+                content = CapturedContent.Audio(
+                    savedFile = file,
+                    originalUri = null
+                )
+            }
+
+        } catch (e: Exception) {
+            recordingFile?.delete()
+        } finally {
+            recorder = null
+            recordingFile = null
+            isRecording = false
         }
     }
 
@@ -123,6 +187,30 @@ fun SmartInputPasteItem(
                 }) {
                     Icon(Icons.Default.AttachFile, contentDescription = "Select File")
                 }
+                IconButton(
+                    onClick = {
+                        if (isRecording) {
+                            stopRecording()
+                        } else {
+                            startRecording()
+                        }
+                    }
+                ) {
+                    Icon(
+                        imageVector = if (isRecording)
+                            Icons.Default.Stop
+                        else
+                            Icons.Default.Mic,
+                        contentDescription = if (isRecording)
+                            "Stop recording"
+                        else
+                            "Record audio",
+                        tint = if (isRecording)
+                            MaterialTheme.colorScheme.error
+                        else
+                            MaterialTheme.colorScheme.onSurface
+                    )
+                }
             }
 
             if (isTyping) {
@@ -144,7 +232,9 @@ fun SmartInputPasteItem(
 
 private fun mediaPermissionsFor(sdkInt: Int): Array<String> {
     return if (sdkInt >= Build.VERSION_CODES.TIRAMISU) {
-        arrayOf(Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.READ_MEDIA_VIDEO)
+        arrayOf(Manifest.permission.READ_MEDIA_IMAGES,
+            Manifest.permission.READ_MEDIA_VIDEO,
+            Manifest.permission.READ_MEDIA_AUDIO)
     } else {
         arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
     }
@@ -180,10 +270,18 @@ private fun ContentPreview(content: CapturedContent?) {
                 Text("Couldn't Upload Image")
             }
         }
-
         is CapturedContent.Video -> {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Movie, contentDescription = null)
+                Text(" ${content.savedFile.name}")
+            }
+        }
+        is CapturedContent.Audio -> {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.MusicNote,
+                    contentDescription = null
+                )
                 Text(" ${content.savedFile.name}")
             }
         }
@@ -194,7 +292,8 @@ private fun ContentPreview(content: CapturedContent?) {
                 Text(" ${content.originalFileName}")
             }
         }
-
         CapturedContent.Empty -> Text("Empty Clipboard")
+
     }
+
 }

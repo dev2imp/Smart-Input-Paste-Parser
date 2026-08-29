@@ -22,6 +22,10 @@ sealed interface CapturedContent {
         val savedFile: File,
         val originalUri: String?
     ) : CapturedContent
+    data class Audio(
+        val savedFile: File,
+        val originalUri: String?
+    ): CapturedContent
 
     data class GenericFile(
         val savedFile: File,
