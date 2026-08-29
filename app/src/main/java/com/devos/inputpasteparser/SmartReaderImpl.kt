@@ -61,7 +61,6 @@ class SmartPasteReaderImpl(
             mimeType?.startsWith("audio/") == true -> {
                 val saved = copyToSandbox(parsedUri, extensionFor(mimeType))
                     ?: return@withContext CapturedContent.Empty
-
                 CapturedContent.Audio(
                     savedFile = saved,
                     originalUri = uri
@@ -79,7 +78,6 @@ class SmartPasteReaderImpl(
             }
         }
     }
-
     private fun classifyText(text: String): CapturedContent {
         val matcher = urlPattern.matcher(text)
         return if (matcher.find() && matcher.start() == 0 && matcher.end() == text.trim().length) {
@@ -88,16 +86,13 @@ class SmartPasteReaderImpl(
             CapturedContent.Text(value = text)
         }
     }
-
     private fun resolveMimeType(uri: Uri): String? {
         return context.contentResolver.getType(uri)
             ?: MimeTypeMap.getSingleton()
                 .getMimeTypeFromExtension(uri.toString().substringAfterLast('.', ""))
     }
-
     private fun resolveFileName(uri: Uri): String? {
         if (uri.scheme != "content") return uri.lastPathSegment
-
         var cursor: Cursor? = null
         try {
             cursor = context.contentResolver.query(uri, null, null, null, null)
@@ -110,11 +105,9 @@ class SmartPasteReaderImpl(
         }
         return uri.lastPathSegment
     }
-
     private fun extensionFor(mimeType: String): String {
         return MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType) ?: "bin"
     }
-
     private fun copyToSandbox(uri: Uri, extension: String): File? {
         return try {
             val destination = File(storageDir, "${UUID.randomUUID()}.$extension")

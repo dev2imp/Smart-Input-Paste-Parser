@@ -15,3 +15,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "InputPasteParser"
 include(":app")
+//include(":demo")
