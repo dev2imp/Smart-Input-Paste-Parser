@@ -40,7 +40,7 @@ afterEvaluate {
             register<MavenPublication>("release") {
                 groupId = "com.github.dev2imp"
                 artifactId = "Smart-Input-Paste-Parser"
-                version = "1.0.1"
+                version = "1.0.6"
 
                 from(components["release"])
             }
@@ -53,7 +53,7 @@ dependencies {
     implementation(libs.androidx.compose.runtime)
     implementation(libs.androidx.core.ktx)
     implementation(libs.material)
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")   // ← EKLE
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
 
     implementation(platform(libs.androidx.compose.bom))
     implementation("androidx.activity:activity-compose:1.10.1")
